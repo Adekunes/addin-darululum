@@ -127,6 +127,10 @@ The core purpose: track every student's Quran memorization journey, monitor atte
 | `parent_children` | Parent→student linkage (legacy/fallback) |
 | `notifications` | In-app notification queue; also used for overdue-email de-duplication (assignment_id + recipient_id + date) |
 | `analytics_metrics` | Pre-aggregated analytics data |
+| `app_settings` | Global app config (admin-only RW; RLS enabled 2026-05-11) |
+| `email_logs` | All Resend dispatches (admin-only SELECT; service_role inserts; RLS enabled 2026-05-11) |
+| `attendance_settings` | Cutoff times + attendance rules (admin RW, teacher SELECT; RLS enabled 2026-05-11) |
+| `attendance_absence_notifications` | Per-day per-student absence email dedup ledger (admin RW, teacher SELECT; RLS enabled 2026-05-11) |
 | `teacher_tasks` | Tasks assigned by admin to teachers — priority (low/medium/high/urgent), status (pending/in_progress/done), due_date, notes |
 | `announcements` | Class announcements from teachers — title, message, class_id, sent_to_count |
 | `absence_requests` | Teacher absence requests — date range, reason, status (pending/approved/rejected), admin_note, reviewed_by |
@@ -139,6 +143,11 @@ The core purpose: track every student's Quran memorization journey, monitor atte
 
 ### Row Level Security
 All tables have RLS policies. Teachers see only their students. Parents see only their children's data. Admins have full access.
+
+**2026-05-11 hardening:** RLS enabled on `app_settings`, `email_logs`, `attendance_settings`, `attendance_absence_notifications` (previously exposed to anon role). Edge functions writing to these tables use `service_role` which bypasses RLS.
+
+### Profile uniqueness
+`profiles.email` has a case-insensitive UNIQUE index (`profiles_email_unique_idx ON LOWER(email)`) since 2026-05-11 to prevent duplicate accounts.
 
 ---
 
@@ -267,6 +276,7 @@ Between any two pushes, an automated release bot commits a `CHANGELOG.md` update
 
 | Date | Summary | See Also |
 |---|---|---|
+| 2026-05-11 (s2) | DB cleanup: dropped 5 dead empty tables (analytics_alerts, analytics_summary, class_metrics_summary, student_metrics_summary, role_permissions); resolved orphan duplicate profile (maimoona.ansari admin row, no auth.users); added LOWER(email) UNIQUE index on profiles; enabled RLS + admin-only policies on app_settings, email_logs, attendance_settings, attendance_absence_notifications; ran ANALYZE; final 28 base tables, 0 dups, 0 RLS gaps | handoff.md |
 | 2026-05-11 | Phase 3 — Interview Scheduling + CSV Export: 3-table interview system (interview_windows, interview_slots, interview_bookings) with RLS; /admin/interviews (create windows, generate slots per teacher, view/cancel bookings); /parent/interviews (browse open windows, book slot with child selector, cancel booking); send-interview-confirmation edge function (Resend, DUM green header, slot + student + teacher details); Reports.tsx filter bar (date range + section filter, Full Attendance Log new report type, query keys include filters); nav: Interviews added to adminNavItems + parentNavItems; i18n: interviews en/fr | handoff.md, ROADMAP.md |
 | 2026-05-09 | Phase 2 — Parent UX: weekly agenda (/parent/agenda) with class-grid + school events overlay; Hifz Report Card printable view (/students/:id/report-card) with Cmd+P → PDF; student photo upload (Supabase student-photos bucket + photo_url column) wired into Dialog/Detail/Popover/list; parent assignment submission (SubmitAssignmentDialog, parent_note column, assignment-submissions bucket, upsert on (assignment_id, student_id)); ParentAcademics action buttons; Parent dashboard graded badge | handoff.md, ROADMAP.md |
 | 2026-05-08 (s3) | Phase 1 — Stabilization: 10 bug fixes (validation, .maybeSingle, CSV escape, madrassah scoping, setState-during-render); Sentry wiring; TS noUnusedLocals + noUnusedParameters; Vitest + 14 critical-path tests; build verified ✓ 48s; 3 email cron jobs paused (jobids 5, 34, 35) until manual smoke test; Finder dupes deleted; .env removed from git; useAttendanceMutation/useStudentsQuery/createTeacherAccount removed; stale branches Abdul/Nazif/claude/* deleted; dev synced to main | handoff.md, ROADMAP.md |

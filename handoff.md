@@ -4,6 +4,46 @@ This file is **non-negotiable**. Every meaningful change must be logged here.
 
 ---
 
+## 2026-05-11 (s2) — DB Cleanup: Dead Tables, Profile Dups, RLS Hardening
+
+**What:** End-of-day database hygiene pass on `depsfpodwaprzxffdcks`.
+
+**Audit results (before):**
+- 0 orphan attendance/progress, 0 duplicate students, 0 duplicate attendance rows — integrity already clean
+- `pg_stat_user_tables` was massively stale (showed `parents`=2, real=121; `profiles`=3, real=144)
+- 5 dead empty tables with zero code refs: `analytics_alerts`, `analytics_summary`, `class_metrics_summary`, `student_metrics_summary`, `role_permissions`
+- 1 duplicate `profiles.email` (`maimoona.ansari@gmail.com`) — orphan admin row (no `auth.users`, no `parents` link) + real parent row with linked child
+- 4 tables with RLS disabled and exposed to anon role: `app_settings`, `email_logs`, `attendance_settings`, `attendance_absence_notifications`
+
+**Migrations applied live:**
+
+`supabase/migrations/20260511010000_cleanup_dead_tables_and_dup_profile.sql`:
+- `DROP TABLE` × 5 (analytics_alerts, analytics_summary, class_metrics_summary, student_metrics_summary, role_permissions) with CASCADE
+- `DELETE` orphan admin profile row (id `794ca656-d5c8-4c28-bb36-e6f58baaa34e`) — kept the real parent row (id `f70161a4-755b-46f6-b202-3b128c975aa6`) which is wired to auth.users + linked to student `325d3a00-...`
+- `CREATE UNIQUE INDEX profiles_email_unique_idx ON profiles (LOWER(email))` — prevents future email dups
+
+`supabase/migrations/20260511020000_enable_rls_unprotected_tables.sql`:
+- `ENABLE ROW LEVEL SECURITY` on all 4 unprotected tables
+- Policies:
+  - `app_settings`: admin-only RW
+  - `email_logs`: admin-only SELECT (service_role bypasses RLS for inserts from edge functions)
+  - `attendance_settings`: admin RW + teacher SELECT
+  - `attendance_absence_notifications`: admin RW + teacher SELECT
+
+**Other:**
+- `ANALYZE;` run to refresh stale planner stats
+
+**Verification (after):**
+- 28 base tables (was 33)
+- 0 duplicate emails in profiles
+- 0 RLS-disabled tables in the previously-flagged set
+- get_advisors security clean for the 4 fixed tables
+
+**Skipped this session (user decision):**
+- Pruning `email_logs` and `attendance_absence_notifications` older than 90 days (no urgency)
+
+---
+
 ## 2026-05-11 — Phase 3: Interview Scheduling + Bulk Attendance CSV Export
 
 **What:** Phase 3 items 3.1 (L) and 3.3 (S) shipped.
