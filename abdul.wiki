@@ -228,7 +228,7 @@ The attendance page is the primary monitoring surface. Key features:
 ## Navigation Config
 
 `src/config/navigation.ts` defines nav items per role:
-- **adminNavItems** — 16 items (Dashboard, Students, Teachers, Classes, ProgressBook, Attendance, Calendar, TeacherSchedules, Tasks, ParentAccounts, BulkImport, AbsenceRequests, Activity, CommunicationTemplates, Reports, Interviews)
+- **adminNavItems** — 11 items (Dashboard, Students, Teachers, Classes, ProgressBook, Attendance, Calendar, Reports, Tasks, ParentAccounts, AdminPanel). Reduced from 16 on 2026-05-11 by consolidating 6 low-frequency items (BulkImport, CommunicationTemplates, Activity, AbsenceRequests, TeacherSchedules, Interviews) into a tabbed hub at `/admin/panel`.
 - **teacherNavItems** — 8 items (filtered by capability: attendance, progress, assignments)
 - **parentNavItems** — 7 items (ParentDashboard, Agenda, QuranProgress, Attendance, Academics, Messages, Interviews)
 
@@ -276,6 +276,7 @@ Between any two pushes, an automated release bot commits a `CHANGELOG.md` update
 
 | Date | Summary | See Also |
 |---|---|---|
+| 2026-05-11 (s3) | Admin UX consolidation: sidebar 16 → 11 items via new `/admin/panel` tabbed hub (Bulk Import / Templates / Activity / Interviews / Schedules / Absences); old URLs redirect to `?tab=` deep links; AdminLayout secondary sidebar trimmed to dev-only pages; Dashboard cleaned: fake hardcoded weekly bars replaced with real attendance query, fake 74% donut fallback → "—", fake Remind Teachers button removed, broken `?tab=performance` links repointed to `/admin/reports`, redundant Quick Nav grid deleted, welcome banner duplicate buttons collapsed | handoff.md |
 | 2026-05-11 (s2) | DB cleanup: dropped 5 dead empty tables (analytics_alerts, analytics_summary, class_metrics_summary, student_metrics_summary, role_permissions); resolved orphan duplicate profile (maimoona.ansari admin row, no auth.users); added LOWER(email) UNIQUE index on profiles; enabled RLS + admin-only policies on app_settings, email_logs, attendance_settings, attendance_absence_notifications; ran ANALYZE; final 28 base tables, 0 dups, 0 RLS gaps | handoff.md |
 | 2026-05-11 | Phase 3 — Interview Scheduling + CSV Export: 3-table interview system (interview_windows, interview_slots, interview_bookings) with RLS; /admin/interviews (create windows, generate slots per teacher, view/cancel bookings); /parent/interviews (browse open windows, book slot with child selector, cancel booking); send-interview-confirmation edge function (Resend, DUM green header, slot + student + teacher details); Reports.tsx filter bar (date range + section filter, Full Attendance Log new report type, query keys include filters); nav: Interviews added to adminNavItems + parentNavItems; i18n: interviews en/fr | handoff.md, ROADMAP.md |
 | 2026-05-09 | Phase 2 — Parent UX: weekly agenda (/parent/agenda) with class-grid + school events overlay; Hifz Report Card printable view (/students/:id/report-card) with Cmd+P → PDF; student photo upload (Supabase student-photos bucket + photo_url column) wired into Dialog/Detail/Popover/list; parent assignment submission (SubmitAssignmentDialog, parent_note column, assignment-submissions bucket, upsert on (assignment_id, student_id)); ParentAcademics action buttons; Parent dashboard graded badge | handoff.md, ROADMAP.md |

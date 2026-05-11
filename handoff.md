@@ -4,6 +4,55 @@ This file is **non-negotiable**. Every meaningful change must be logged here.
 
 ---
 
+## 2026-05-11 (s3) — Admin UX Consolidation (B + C + F)
+
+**What:** Sidebar 16 → 11 items; new tabbed hub at `/admin/panel`; admin Dashboard cleaned of fake data + broken links + redundant buttons.
+
+### B + C: Sidebar consolidation + tabbed hub
+
+**New file** `src/pages/admin/AdminPanel.tsx` (one page, shadcn `Tabs`, `?tab=` deep-linked, wraps existing pages directly — no body extraction needed since each page already uses `AdminPageShell`):
+- Tabs: Bulk Import / Templates / Activity Log / Interviews / Teacher Schedules / Absence Requests
+- URL: `/admin/panel?tab=<id>` — deep-linkable, defaults to `bulk-import`
+- Wrapped in `DashboardLayout` so the main sidebar stays visible
+
+**Sidebar trim** (`src/config/navigation.ts`):
+- REMOVED: BulkImport, CommunicationTemplates, ActivityFeed, AbsenceRequests, TeacherSchedules, Interviews
+- ADDED: single "Admin Panel" entry (Settings icon) under Admin section
+- Reports stays as direct sidebar entry (high-frequency)
+- Final count: 11 items (Dashboard / Students / Teachers / Classes / ProgressBook / Attendance / Calendar / Reports / Tasks / ParentAccounts / AdminPanel)
+
+**Old URLs → redirects** (`src/App.tsx`):
+- `/admin/communication-templates` → `/admin/panel?tab=templates`
+- `/admin/interviews` → `/admin/panel?tab=interviews`
+- `/admin/bulk-student-import` → `/admin/panel?tab=bulk-import`
+- `/admin/teacher-schedules` → `/admin/panel?tab=schedules`
+- `/activity` → `/admin/panel?tab=activity`
+- `/absence-requests` → `/admin/panel?tab=absences`
+- All bookmarks keep working
+
+**AdminLayout sidebar trim** (`src/pages/admin/AdminLayout.tsx`): the secondary `/admin/*` sidebar now only shows true dev pages (Setup / Roles / Seeder / Admin Creator / Parent Accounts / Settings). TeacherSchedules + bulk-import sub-routes removed (replaced by redirects).
+
+**i18n** (`src/i18n/translations.ts`): `adminPanel: "Admin Panel"` / `"Panneau Admin"`.
+
+### F: Admin Dashboard cleanup (`src/components/admin/AdminDashboard.tsx`)
+
+| Change | Before | After |
+|---|---|---|
+| Weekly attendance chart | Hardcoded fake `[42, 91, 88, 74, 83, 60, 28]` array | Real `useQuery` against `attendance` table for last 7 days, computed % per day |
+| Donut fallback | Showed fake `74%` when real value is 0 | Shows `—` |
+| "Remind Teachers" button | Fake toast, no email actually sent | REMOVED (false-positive UX worse than no button) |
+| Welcome banner buttons | 2 buttons both navigating to `/students` | Collapsed to 1 "Manage Students" button |
+| "View all" alerts link | `/dashboard?tab=performance` (no such tab exists) | `/admin/reports` |
+| "View Performance" alert button | Same broken link | `/admin/reports` |
+| Staff "Manage" button | `/dashboard?tab=students` (broken) | `/teachers` |
+| Quick Nav grid (4 cards) | Duplicated sidebar items (Students/Attendance/Classes/Analytics) | DELETED entire grid |
+
+**Net buttons:** ~14 → ~6 meaningful actions on the dashboard.
+
+**Build:** `npm run build` ✓ exit 0, 5.02s, no new warnings.
+
+---
+
 ## 2026-05-11 (s2) — DB Cleanup: Dead Tables, Profile Dups, RLS Hardening
 
 **What:** End-of-day database hygiene pass on `depsfpodwaprzxffdcks`.
