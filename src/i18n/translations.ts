@@ -37,6 +37,7 @@ const en: Dict = {
     profile: "Profile",
     communicationTemplates: "Templates",
     reports: "Reports",
+    interviews: "Interviews",
   },
   portal: {
     admin: "Admin Portal",
@@ -754,6 +755,7 @@ const fr: Dict = {
     profile: "Profil",
     communicationTemplates: "Modèles",
     reports: "Rapports",
+    interviews: "Entretiens",
   },
   portal: {
     admin: "Portail Admin",

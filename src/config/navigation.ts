@@ -1,5 +1,6 @@
 import {
   Book,
+  CalendarCheck,
   CalendarDays,
   CalendarOff,
   CheckSquare,
@@ -123,6 +124,12 @@ export const adminNavItems: NavItem[] = [
     icon: FileText,
     description: "Generate and export reports",
   },
+  {
+    href: "/admin/interviews",
+    label: "nav.interviews",
+    icon: CalendarCheck,
+    description: "Schedule parent-teacher interviews",
+  },
 ];
 
 /**
@@ -221,5 +228,11 @@ export const parentNavItems: NavItem[] = [
     label: "nav.messages",
     icon: MessageSquare,
     description: "Message your child's teacher",
+  },
+  {
+    href: "/parent/interviews",
+    label: "nav.interviews",
+    icon: CalendarCheck,
+    description: "Book parent-teacher interviews",
   },
 ];

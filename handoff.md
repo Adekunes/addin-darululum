@@ -4,6 +4,58 @@ This file is **non-negotiable**. Every meaningful change must be logged here.
 
 ---
 
+## 2026-05-11 — Phase 3: Interview Scheduling + Bulk Attendance CSV Export
+
+**What:** Phase 3 items 3.1 (L) and 3.3 (S) shipped.
+
+### 3.1 Parent-Teacher Interview Scheduling
+
+**DB migration** (`supabase/migrations/20260511000000_create_interview_tables.sql`) — applied live to `depsfpodwaprzxffdcks`:
+- `interview_windows(id, title, description, start_date, end_date, slot_duration_minutes, created_by, created_at)`
+- `interview_slots(id, window_id, teacher_id, slot_date, slot_time, duration_minutes, created_at)`
+- `interview_bookings(id, slot_id, student_id, parent_id, notes, status, created_at)` — UNIQUE on `slot_id` (prevents double-booking)
+- RLS: windows/slots are public-read, admin-write; bookings are admin/teacher-read, parent-own-read, parent-insert, admin-update/delete
+
+**Admin panel** (`src/pages/admin/Interviews.tsx` at `/admin/interviews`):
+- 3 pill tabs: Interview Windows / Manage Slots / Bookings
+- "New Window" dialog: title, description, date range, slot duration (10/15/20/30 min)
+- "Generate Slots" dialog: pick window + teacher + date + start/end time → auto-generates N-minute slots via frontend loop → bulk inserts
+- Bookings table: date/time, teacher, student, parent, status; Cancel/No-show buttons
+
+**Parent booking page** (`src/pages/ParentInterviews.tsx` at `/parent/interviews`):
+- Shows open windows (end_date ≥ today) as expandable cards
+- Slots grouped by teacher → date → time pill buttons (green=mine, gray=booked, white=available)
+- Click slot → confirm dialog → select child (if multiple) → add notes → insert booking → calls edge function
+- "My Bookings" banner at top with cancel option
+
+**Edge function** (`supabase/functions/send-interview-confirmation/index.ts`) — deployed live (v1):
+- POST `{ slot_id, student_id, parent_id }`
+- Sends HTML email to parent: date, time, teacher name, student name, deep link to `/parent/interviews`
+- DUM green gradient header, matches other email templates
+
+**Navigation + i18n:**
+- Admin sidebar: "Interviews" with CalendarCheck icon under Admin Tools
+- Parent sidebar: "Interviews" with CalendarCheck icon
+- i18n: `interviews: "Interviews"` / `"Entretiens"` in en + fr nav sections
+
+### 3.3 Bulk Attendance CSV Export
+
+**Modified** `src/pages/admin/Reports.tsx`:
+- New filter bar card at top: Date From, Date To, Section dropdown (men/women/Henri-Bourassa/Saint-Laurent), Reset button
+- Filter state defaults to current month (first → today), section = all
+- `fetchAttendanceByStudent` + `fetchAttendanceBySection` both now accept filters: `.gte("date", dateFrom)`, `.lte("date", dateTo)`, `.eq("section", section)` on student query
+- New **"Full Attendance Log"** report: raw date-stamped records with Date, Student Name, Section, Status, Notes columns — designed for government/external reporting
+- React Query keys include filter object — changing any filter clears cached data
+
+**Build:** `npm run build` ✓ exit 0, 4.91s (no new warnings vs. baseline)
+
+**Pending from Phase 3:**
+- 3.2 Transport/Pickup Confirmation (M)
+- 3.4 Secretary test accounts (S)
+- Email crons 5, 34, 35 still paused — run smoke test before re-enabling
+
+---
+
 ## 2026-05-09 — Phase 2: Parent UX (4 features in parallel)
 
 **What:** Phase 2 of ROADMAP. 4 parent-facing features built in parallel via subagents:
