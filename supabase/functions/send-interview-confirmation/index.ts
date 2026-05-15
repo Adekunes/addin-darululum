@@ -13,14 +13,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@daralulummontreal.com";
+const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") ||
+  "noreply@daralulummontreal.com";
 const APP_URL = Deno.env.get("APP_URL") || "https://app.daralulummontreal.com";
 const LOGO_URL = Deno.env.get("LOGO_URL") ||
   "https://depsfpodwaprzxffdcks.supabase.co/storage/v1/object/public/dum-logo/dum-logo.png";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -40,21 +42,29 @@ serve(async (req) => {
     if (!slot_id || !student_id || !parent_id) {
       return new Response(
         JSON.stringify({ error: "slot_id, student_id, parent_id required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
     // Fetch slot with teacher + window
     const { data: slot, error: slotErr } = await supabase
       .from("interview_slots")
-      .select("slot_date, slot_time, duration_minutes, teacher:profiles!interview_slots_teacher_id_fkey(name), window:interview_windows!interview_slots_window_id_fkey(title)")
+      .select(
+        "slot_date, slot_time, duration_minutes, teacher:profiles!interview_slots_teacher_id_fkey(name), window:interview_windows!interview_slots_window_id_fkey(title)",
+      )
       .eq("id", slot_id)
       .single();
 
     if (slotErr || !slot) {
       return new Response(
         JSON.stringify({ error: "Slot not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -81,10 +91,20 @@ serve(async (req) => {
 
     // Format date/time
     const slotDate = new Date(slot.slot_date + "T" + slot.slot_time);
-    const dateStr = slotDate.toLocaleDateString("en-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    const timeStr = slotDate.toLocaleTimeString("en-CA", { hour: "numeric", minute: "2-digit", hour12: true });
+    const dateStr = slotDate.toLocaleDateString("en-CA", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = slotDate.toLocaleTimeString("en-CA", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
     const teacherName = (slot.teacher as any)?.name ?? "your child's teacher";
-    const windowTitle = (slot.window as any)?.title ?? "Parent-Teacher Interview";
+    const windowTitle = (slot.window as any)?.title ??
+      "Parent-Teacher Interview";
     const studentName = student?.name ?? "Your child";
     const parentName = parent.name ?? "Parent";
 
@@ -161,7 +181,8 @@ serve(async (req) => {
     const { error: emailErr } = await resend.emails.send({
       from: FROM_EMAIL,
       to: parent.email,
-      subject: `Interview Confirmed: ${dateStr} at ${timeStr} with ${teacherName}`,
+      subject:
+        `Interview Confirmed: ${dateStr} at ${timeStr} with ${teacherName}`,
       html,
     });
 
@@ -169,7 +190,10 @@ serve(async (req) => {
       console.error("Resend error:", emailErr);
       return new Response(
         JSON.stringify({ success: false, error: emailErr }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -181,7 +205,10 @@ serve(async (req) => {
     console.error("Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
